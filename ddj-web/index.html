@@ -3,17 +3,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DDJ Decks</title>
+<link rel="icon" href="/favicon.svg">
 <style>
+  /* Pulsar type: Space Grotesk for labels and readouts, Inter for the rest. Bundled (SIL OFL), no internet needed at a venue */
+  @font-face { font-family: 'Space Grotesk'; src: url(/fonts/space-grotesk.woff2) format('woff2'); font-weight: 400 600 }
+  @font-face { font-family: Inter; src: url(/fonts/inter.woff2) format('woff2'); font-weight: 400 600 }
   :root {
     color-scheme: dark;
-    --bg: #0e0e10; --card: #18181c; --well: #0b0b0d; --line: #2a2a30; --raise: #26262c; --text: #ececf0; --mute: #8b8b96;
-    --a: #00a8c6; --b: #d1009e; --play: #00a060; --cue: #ff8c00; --sync: #1e78ff;
+    --bg: #0e0e10; --card: #18181c; --well: #0b0b0d; --line: #2a2a30; --raise: #26262c; --text: #ececf0; --mute: #999999;
+    --a: #00a8c6; --b: #d1009e; --play: #00a060; --cue: #ff8c00; --sync: #1e78ff; --warn: #e5c100;
+    --label: 'Space Grotesk', system-ui, sans-serif; --body: Inter, system-ui, sans-serif;
   }
   * { box-sizing: border-box }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; -webkit-user-select: none; user-select: none }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 var(--body); -webkit-user-select: none; user-select: none }
   header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line) }
-  header h1 { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: .08em }
-  #note { color: var(--cue); font-size: 13px }
+  header h1 { margin: 0; font: 600 14px var(--label); letter-spacing: .08em }
+  header #folderName { color: var(--mute); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0 }
+  header #folderBtn { padding: 4px 10px; font-size: 12px }
+  #note { color: var(--warn); font-size: 13px }
   #conn { margin-left: auto; color: var(--mute); font-size: 13px }
   #conn::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #c33 }
   #conn.up::before { background: var(--play) }
@@ -22,65 +29,94 @@
   #conn:not(.up) { color: var(--text); animation: pg-flicker 3.4s linear infinite }
   @keyframes pg-rgb { 0%, 95%, 100% { text-shadow: none; transform: none } 96% { text-shadow: -2px 0 #05F9FE, 2px 0 #D646FF } 97% { text-shadow: 2px 0 #05F9FE, -2px 0 #D646FF; transform: translateX(1px) } 98% { text-shadow: -1px 0 #D646FF, 1px 0 #05F9FE; transform: none } 99% { text-shadow: 1.5px 0 #05F9FE, -1.5px 0 #D646FF } }
   @keyframes pg-flicker { 0%, 93%, 100% { opacity: 1 } 94% { opacity: .55 } 95% { opacity: 1 } 97% { opacity: .75 } 98% { opacity: 1 } }
-  @media (prefers-reduced-motion: reduce) { header h1, #conn { animation: none !important } }
-  main { display: grid; gap: 12px; padding: 12px 16px; grid-template-columns: 1fr 240px 1fr; grid-template-areas: 'a mix b' 'browser browser side' }
-  @media (max-width: 960px) { main { grid-template-columns: 1fr 1fr; grid-template-areas: 'a b' 'mix side' 'browser browser' } }
+  /* a slow cyan→magenta edge on the waveforms (A to B), and a glitch burst on MIX only while it crossfades */
+  @keyframes pg-grad { 0% { background-position: 0% 0 } 100% { background-position: 200% 0 } }
+  .waves::before { content: ''; position: absolute; top: 0; left: 8px; right: 8px; height: 2px; background: linear-gradient(90deg, #05F9FE, #D646FF, #05F9FE); background-size: 200% 100%; animation: pg-grad 6s linear infinite }
+  #mix.on { animation: pg-rgb 2.4s steps(1) infinite }
+  @media (prefers-reduced-motion: reduce) { header h1, #conn, .waves::before, #mix.on { animation: none !important } }
+  main { display: grid; gap: 12px; padding: 12px 16px; grid-template-columns: 1fr minmax(320px, .75fr) 1fr; grid-template-areas: 'waves waves waves' 'a mix b' 'brA mix brB' }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr 1fr; grid-template-areas: 'waves waves' 'a b' 'brA brB' 'mix mix' } }
   .card { min-width: 0; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 8px }
-  .card h2, summary { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mute) }
+  .card h2, summary { margin: 0 0 8px; font: 600 12px var(--label); letter-spacing: .08em; text-transform: uppercase; color: var(--mute) }
   .num { font-variant-numeric: tabular-nums }
-  button { font: 600 13px system-ui, sans-serif; letter-spacing: .03em; color: var(--text); background: var(--raise); border: 1px solid #34343c; border-radius: 6px; padding: 8px 10px; cursor: pointer }
+  button { font: 600 13px var(--body); letter-spacing: .06em; color: var(--text); background: var(--raise); border: 1px solid #34343c; border-radius: 6px; padding: 8px 10px; cursor: pointer }
   button:active { transform: translateY(1px) }
-  button:disabled { opacity: .3; cursor: not-allowed }
+  /* disabled stays readable from a metre away: dashed and muted, not faded out */
+  button:disabled { color: var(--mute); background: transparent; border-style: dashed; cursor: not-allowed }
+  /* a risky tap takes two: the first arms the button for 2 s */
+  button.armed { color: var(--bg) !important; background: var(--warn) !important; border-color: var(--warn) !important }
+  .why { margin: -2px 0 0; min-height: 1.4em; color: var(--mute); font-size: 12px }
 
-  /* decks: border and letter light up in the deck color while it plays */
-  .deck.playing { border-color: var(--c) }
+  /* decks: tinted, with a deck-color bar on top and the letter lit while it plays */
+  .deck.playing { border-color: var(--c); background: color-mix(in srgb, var(--c) 7%, var(--card)); box-shadow: inset 0 4px 0 var(--c) }
+  .deck.empty .readout { visibility: hidden }
   .deck .top { display: flex; align-items: center; gap: 8px }
-  .deck .letter { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--c); border-radius: 4px; font-weight: 700; color: color-mix(in srgb, var(--c) 70%, white) }
+  .deck .letter { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--c); border-radius: 4px; font: 600 14px var(--label); color: color-mix(in srgb, var(--c) 70%, white) }
   .deck.playing .letter { background: var(--c); color: var(--bg) }
-  .deck .title { flex: 1; min-width: 0; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-  .deck .eject { padding: 4px 8px; font-size: 11px; color: var(--mute); background: none }
-  .readout { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 8px; color: var(--mute) }
-  .readout b { font-size: 32px; font-weight: 600; line-height: 1.1; color: var(--text) }
-  .bar { position: relative; height: 32px; background: var(--well); border: 1px solid var(--line); border-radius: 5px; cursor: pointer; touch-action: none; overflow: hidden }
+  .deck .name { flex: 1; min-width: 0; display: flex; flex-direction: column }
+  .deck .title { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .deck .album { color: var(--mute); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .deck .cover { width: 32px; height: 32px; flex: none; object-fit: cover; border-radius: 4px }
+  .deck .eject { padding: 4px 8px; font-size: 12px; color: var(--mute); background: none }
+  .readout { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; margin: 2px 0 4px; color: var(--mute) }
+  .readout b { font: 600 40px/1.1 var(--label); color: var(--text) }
+  .readout .bpm { font: 600 20px var(--label); color: var(--text) }
+  .bar { position: relative; height: 26px; background: var(--well); border: 1px solid var(--line); border-radius: 5px; cursor: pointer; touch-action: none; overflow: hidden }
   .bar .wave { position: absolute; inset: 0; width: 100%; height: 100% }
-  .zoombox { position: relative; margin-top: 6px }
-  .zoom { display: block; width: 100%; height: 96px; box-sizing: border-box; background: var(--well); border: 1px solid var(--line); border-radius: 5px }
-  .zoombox .zoomctl { position: absolute; top: 4px; right: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--mute) }
-  .zoombox .zoomctl button { width: 26px; padding: 2px 0 }
-  .bar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: color-mix(in srgb, var(--c) 45%, transparent); border-right: 2px solid var(--c) }
-  .bar .tick { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--cue); font: normal 10px/1 system-ui, sans-serif }
+  /* waves: deck A zoom over deck B zoom, playheads lined up; the master scope is a faint trace across the seam */
+  .waves { grid-area: waves; position: relative; display: flex; flex-direction: column; gap: 2px; padding: 8px }
+  .zoombox { position: relative }
+  .zoom { display: block; width: 100%; height: clamp(44px, 100dvh / 3 - 190px, 130px); box-sizing: border-box; background: var(--well); border: 1px solid var(--line); border-radius: 5px }
+  .zoombox.playing .zoom { border-color: var(--c) }
+  .zoombox .wl { position: absolute; top: 5px; left: 6px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 3px; font: 600 13px/1 var(--label); color: var(--bg); background: var(--c) }
+  #scope { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); pointer-events: none; opacity: .45 }
+  .zoombox .zoomctl { position: absolute; z-index: 1; top: 5px; right: 5px; display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 5px; background: #000b; font-size: 12px; color: var(--text) }
+  .zoombox .zoomctl button { width: 28px; padding: 2px 0 }
+  .zoombox .zoomspan { min-width: 4ch; text-align: center }
+  /* no track: the lane shrinks to a strip; one zoom control for both lanes (their playheads line up) */
+  .zoombox.empty .zoom { height: 28px }
+  .zoombox.empty .zoomctl, #wave1:not(.empty) ~ #wave2 .zoomctl { display: none }
+  .zoombox.empty::after { content: 'No track'; position: absolute; top: 6px; left: 34px; color: var(--mute); font-size: 12px }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: color-mix(in srgb, var(--well) 65%, transparent); border-right: 2px solid #fff }
+  .bar .tick { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--cue); font: normal 11px/1 var(--body) }
   .bar .tick::after { content: attr(data-n); position: absolute; top: 2px; left: 4px; color: var(--cue) }
-  .bar .loop { --loop: #3fd28b; position: absolute; top: 0; bottom: 0; box-sizing: border-box; border: 2px solid var(--loop); border-width: 0 2px; background: color-mix(in srgb, var(--loop) 15%, transparent); font: 600 9px/1 system-ui, sans-serif; color: var(--loop) }
+  .bar .loop { --loop: #3fd28b; position: absolute; top: 0; bottom: 0; box-sizing: border-box; border: 2px solid var(--loop); border-width: 0 2px; background: color-mix(in srgb, var(--loop) 15%, transparent); font: 600 11px/1 var(--body); color: var(--loop) }
   .bar .loop.on { background: color-mix(in srgb, var(--loop) 35%, transparent) }  /* looping */
   .bar .loop.open { border-right: 0 }  /* IN set, waiting for OUT */
   .bar .loop::before { content: 'IN'; position: absolute; bottom: 3px; right: calc(100% + 3px) }  /* outside, so a short loop stays readable */
   .bar .loop:not(.open)::after { content: 'OUT'; position: absolute; bottom: 3px; left: calc(100% + 3px) }
-  .bar .hint { display: none; position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--mute) }
-  .deck.playing .bar .hint { display: block }
-  .transport { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0 }
+  .bar .loop.beat::before, .bar .loop.beat::after { content: none }  /* beat loop / roll: no IN / OUT labels */
+  .bar .hint { display: none; position: absolute; inset: 0; place-items: center; font-size: 12px; font-weight: 600; color: var(--text); background: #000a }
+  .deck:not(.empty) .bar.holding .hint { display: grid }
+  .transport { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 6px 0 }
+  .transport button { padding: 6px 4px }
   .transport .on[data-k=play] { background: var(--play); border-color: var(--play) }
   .transport .on[data-k=sync] { background: var(--sync); border-color: var(--sync) }
   .transport .on[data-k=shift] { background: var(--text); color: var(--bg) }
   .transport [data-k=cue] { color: var(--cue) }
   .transport .on[data-k=pfl], #phones.on { background: var(--c, var(--cue)); border-color: var(--c, var(--cue)); color: #fff }
   .pads { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px }
-  .pads button { position: relative; height: 44px; color: var(--mute) }
+  .pads button { position: relative; height: 32px; color: var(--mute) }
   .pads button.on { background: color-mix(in srgb, var(--c) 70%, black); color: #fff }
   .shift .pads button.on { outline: 1px dashed var(--text); outline-offset: -4px }  /* tap now deletes */
   .pads button.lit::after { content: ''; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--c) }  /* controller pad LED */
   .shift .pads button.lit::after, .pads button.on.lit::after { background: #fff }
-  .knobs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; text-align: center; color: var(--mute); font-size: 11px }
+  .knobs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; text-align: center; color: var(--mute); font-size: 12px }
+  .knobs .down { color: var(--warn) }  /* playing with the channel fader down */
+  .knobs .down::after { content: ' DOWN' }
+  .deck .knobs:has(.down) { display: grid !important }  /* the knobs hide on shorter windows, but never this warning */
   .meter { height: 6px; margin-top: 3px; background: var(--well); border-radius: 3px; overflow: hidden }
   .meter.bi { background: linear-gradient(90deg, transparent calc(50% - 1px), var(--line) 0 calc(50% + 1px), transparent 0), var(--well) }
   .meter i { display: block; height: 100%; width: 0; background: var(--c) }
 
   /* mixer + side */
-  .mixer { display: flex; flex-direction: column; gap: 12px; grid-area: mix }
+  .mixer { display: flex; flex-direction: column; gap: 8px; grid-area: mix; min-height: 0; overflow-y: auto }
+  .mixer button { padding: 7px 10px }
   .vu-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--mute) }
   .vu { position: relative; flex: 1; height: 12px; background: var(--well); border-radius: 3px; overflow: hidden }
   .vu i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--play) 70%, #e5c100 85%, #e53935) }
   .vu b { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text) }
-  .xf-labels { display: flex; justify-content: space-between; font-weight: 700 }
+  .xf-labels { display: flex; justify-content: space-between; font: 600 14px var(--label) }
   .xf-labels :first-child { color: color-mix(in srgb, var(--a) 70%, white) }
   .xf-labels :last-child { color: color-mix(in srgb, var(--b) 70%, white) }
   input[type=range] { width: 100%; height: 36px; margin: 0; background: none; -webkit-appearance: none; appearance: none }
@@ -89,40 +125,94 @@
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 34px; margin-top: -14px; border: 1px solid var(--bg); border-radius: 4px; background: #d8d8e0 }
   input[type=range]::-moz-range-thumb { width: 22px; height: 34px; border: 1px solid var(--bg); border-radius: 4px; background: #d8d8e0 }
   #trfx.on { background: var(--text); border-color: var(--text); color: var(--bg) }
-  .side { grid-area: side; display: flex; flex-direction: column; gap: 12px }
+  #rec.on { background: #e5484d; border-color: #e5484d; color: #fff }
+  .mixrow { display: grid; grid-template-columns: 2fr 1fr; gap: 6px }
+  #mix.on { background: linear-gradient(90deg, var(--a), var(--b)); border-color: transparent; color: #fff }
+  #auto.on { background: var(--text); border-color: var(--text); color: var(--bg) }
+  .mixer details { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line) }
   summary { margin: 0; cursor: pointer }
   details[open] summary { margin-bottom: 10px }
   .setup { display: flex; flex-direction: column; gap: 8px }
-  .modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px }
-  .modes button { padding: 8px 4px; font-size: 11px; text-transform: uppercase }
-  .modes button.on, .padmodes button.on { background: var(--text); color: var(--bg) }
+  /* pad light modes: each button shows its pattern on the 16 pads (deck A's 2×4, then deck B's) */
+  .modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px }
+  .modes button { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; font-size: 12px; text-transform: uppercase }
+  .modes svg { display: block; width: 100%; height: auto }
+  .modes rect { fill: #34343c }
+  .modes rect.l { fill: var(--c) }
+  .modes button.on { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text) }
+  .padmodes button.on { background: var(--text); color: var(--bg) }
   .padmodes { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 6px; margin-bottom: 6px }
-  .padmodes button { padding: 5px 4px; font-size: 11px; text-transform: uppercase }
-  .keys { margin: 4px 0 0; color: var(--mute); font-size: 11px }
-  canvas { width: 100%; height: 120px; display: block; background: var(--well); border-radius: 5px }
+  .padmodes button { padding: 5px 4px; font-size: 12px; text-transform: uppercase }
+  /* SNAP: a toggle pill, only shown in the loop modes it affects */
+  .padmodes [data-snap] { margin-left: 8px; padding: 5px 10px; border-radius: 999px; color: var(--mute) }
+  .padmodes [data-snap][hidden] { display: none }
+  .padmodes [data-snap]::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border: 1px solid currentColor; border-radius: 50%; vertical-align: 0 }
+  .padmodes [data-snap].on { color: var(--text); background: var(--raise) }
+  .padmodes [data-snap].on::before { background: var(--c); border-color: var(--c) }
+  .padhint { margin: 4px 0 -4px; min-height: 1.4em; color: var(--mute); font-size: 12px }
+  .keys { margin: 0; color: var(--mute); font-size: 12px }
 
   /* browser */
-  .browser { grid-area: browser; display: flex; flex-direction: column; height: 60vh; min-height: 320px }
+  .browser { display: flex; flex-direction: column; height: 60vh; min-height: 320px }
   .browser .tools { display: flex; gap: 8px; margin-bottom: 8px }
-  #search { flex: 1; min-width: 0; padding: 8px 10px; font: inherit; color: var(--text); background: var(--well); border: 1px solid var(--line); border-radius: 6px; -webkit-user-select: text; user-select: text }
-  .status { display: flex; gap: 12px; margin-bottom: 6px; color: var(--mute); font-size: 12px }
-  #folderName { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-  #loadNote { color: var(--cue) }
+  .search { flex: 1; min-width: 0; padding: 8px 10px; font: inherit; color: var(--text); background: var(--well); border: 1px solid var(--line); border-radius: 6px; -webkit-user-select: text; user-select: text }
+  .loadNote { margin: 0 0 6px; color: var(--warn); font-size: 12px }
+  .loadNote:empty { display: none }
+  /* up next: songs added while the deck plays, loaded one by one as each song ends */
+  /* two rows show, the rest scroll; the header counts them all, so the song list keeps its room */
+  .queue { flex: none; max-height: 86px; margin: 0 0 8px; padding: 4px 0; overflow-y: auto; border: 0; border-radius: 6px; background: var(--well); counter-reset: q }
+  .queue[hidden] { display: none }
+  .queue::before { content: 'Up next · ' attr(data-n); display: block; padding: 0 8px 2px; color: var(--mute); font: 600 12px var(--label); letter-spacing: .08em; text-transform: uppercase }
+  .queue li { padding: 2px 8px; border: 0; cursor: default }
+  .queue li::before { counter-increment: q; content: counter(q); width: 2ch; color: var(--c) }
+  .queue li button { width: 44px; padding: 4px 0; background: var(--raise); color: var(--mute) }
+  .browser.playing .preview { display: none !important }  /* the deck is playing: the list gets the room */
   ol { flex: 1; margin: 0; padding: 0; overflow-y: auto; list-style: none; border-top: 1px solid var(--line) }
-  li { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-bottom: 1px solid #1f1f24; cursor: pointer }
+  li { display: flex; align-items: center; gap: 8px; padding: 2px 6px; border-bottom: 1px solid #1f1f24; cursor: pointer }
   li.sel { background: #2c2c36; box-shadow: inset 0 0 0 1px #4a4a56 }
   li .n { width: 4ch; text-align: right; color: var(--mute) }
   li .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-  li button { width: 44px; padding: 7px 0; border: 0; color: #fff }
-  li button.a { background: var(--a) }
-  li button.b { background: var(--b) }
+  /* the selected song's record: cover, album, year · label, side and track */
+  .preview { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; padding: 8px; background: var(--well); border-radius: 6px }
+  .preview[hidden] { display: none }
+  .preview img { width: 44px; height: 44px; flex: none; object-fit: cover; border-radius: 4px }
+  .preview div { display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+  .preview div > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .preview .pt { font-size: 14px }
+  .preview .pm { color: var(--mute); font-size: 12px }
+  li .t small { display: block; color: var(--mute); font-size: 12px; overflow: hidden; text-overflow: ellipsis }
+  li button { min-width: 84px; padding: 5px 8px; border: 0; font-size: 12px; color: #fff; background: var(--c) }
 
-  /* phone: browse and load first, compact decks */
+  /* wider than a phone and tall enough: the page is the window, only the song lists scroll.
+     The waves give up height on shorter windows; below 760px the page scrolls instead */
+  @media (min-width: 641px) and (min-height: 760px) {
+    body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden }
+    main { flex: 1; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr) }
+    .browser { height: auto; min-height: 0 }
+  }
+  /* short window: the list rows already say album and side, the record card gives its room to the songs */
+  @media (max-height: 900px) { .preview { display: none !important } }
+  /* tablet / half a laptop screen: mixer and setup under the lists */
+  @media (min-width: 641px) and (max-width: 960px) and (min-height: 760px) { main { grid-template-rows: auto auto minmax(0, 1fr) auto } }
+  @media (min-width: 641px) and (max-height: 1100px) { .knobs { display: none } }
+  /* laptop next to the controller: the hardware has the pads, so here they are one slim row and the room goes to the lists */
+  @media (min-width: 961px) and (pointer: fine) {
+    .pads { grid-template-columns: repeat(8, 1fr) }
+    .pads button { height: 28px }
+    .padhint { display: none }
+  }
+
+  /* phone: MIX near the top, each deck under its song list */
   @media (max-width: 640px) {
-    main { grid-template-columns: 1fr; grid-template-areas: 'browser' 'a' 'b' 'mix' 'side' }
-    .browser { height: 50vh; min-height: 280px }
-    .knobs, #scopeCard { display: none }
-    .readout b { font-size: 28px }
+    main { grid-template-columns: 1fr; grid-template-areas: 'waves' 'mix' 'brA' 'a' 'brB' 'b' }
+    .browser { height: 45vh; min-height: 260px }
+    .zoom { height: 64px }
+    .knobs { display: none }
+    .pads button { height: 44px }  /* finger-sized on a phone */
+    .transport button { padding: 8px 4px }
+    .queue li button, .zoombox .zoomctl button { min-height: 44px; width: 44px }
+    .queue { max-height: 116px }
+    .readout b { font-size: 32px }
   }
 
   dialog { width: min(520px, 92vw); padding: 0; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 10px }
@@ -130,13 +220,19 @@
   dialog header { border: 0 }
   #dirPath { padding: 0 16px 8px; color: var(--mute); font-size: 12px; word-break: break-all }
   #dirs { max-height: 50vh; overflow-y: auto; border-top: 1px solid var(--line) }
-  #dirs div { padding: 11px 16px; border-bottom: 1px solid #1f1f24; cursor: pointer }
-  #dirs div:hover { background: #222228 }
+  #dirs .row { padding: 9px 16px; border-bottom: 1px solid #1f1f24; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  #dirs .row:hover { background: #222228 }
+  #dirs .row.sel { background: #2c2c36; box-shadow: inset 0 0 0 1px #4a4a56 }
+  #dirs .row::before { content: '▸'; display: inline-block; width: 1.4em; color: var(--mute) }
+  #dirs .open > .row::before { content: '▾' }
+  #dirs .leaf > .row::before { visibility: hidden }
+  #dirs .node:not(.open) > .kids { display: none }
   dialog footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px }
 </style>
 
-<header><h1>DDJ-200</h1><span id="note" role="status"></span><span id="conn">connecting…</span></header>
+<header><h1>DDJ-200</h1><span id="folderName"></span><button id="folderBtn">FOLDER…</button><span id="note" role="status"></span><span id="conn">connecting…</span></header>
 <main>
+  <section class="card waves"><div class="zoombox" id="wave1" style="--c: var(--a)"></div><div class="zoombox" id="wave2" style="--c: var(--b)"></div><canvas id="scope" aria-label="master scope"></canvas></section>
   <section class="card deck" id="deck1" style="--c: var(--a); grid-area: a"></section>
   <section class="card deck" id="deck2" style="--c: var(--b); grid-area: b"></section>
 
@@ -144,27 +240,24 @@
     <h2>Mixer</h2>
     <div class="vu-row">MASTER<div class="vu"><i id="vu"></i><b id="peak"></b></div></div>
     <div><div class="xf-labels"><span>A</span><span>B</span></div><input id="xf" type="range" min="0" max="127" value="64" aria-label="crossfader"></div>
+    <div class="mixrow"><button id="mix">MIX</button><button id="auto">AUTO</button></div>
+    <p class="why" id="mixWhy"></p>
     <button id="trfx">TRANSITION FX</button>
     <button id="phones">MASTER CUE</button>
-  </section>
-
-  <div class="side">
-    <section class="card" id="scopeCard"><h2>Scope</h2><canvas id="scope" width="480" height="120"></canvas></section>
-    <details class="card">
+    <button id="rec">REC</button>
+    <p class="why" id="recWhy"></p>
+    <details open>
       <summary>Setup</summary>
       <div class="setup">
+        <p class="keys">Keys: ↑ ↓ browse the list used last · A / B load or queue · / search · M mix</p>
         <h2>Pad lights</h2><div class="modes" id="modes"></div>
         <button id="calibrate">CALIBRATE</button>
-        <p class="keys">Keys: ↑ ↓ browse, A / B load, / search</p>
       </div>
     </details>
-  </div>
-
-  <section class="card browser">
-    <div class="tools"><input id="search" type="search" placeholder="Search songs…" autocomplete="off"><button id="folderBtn">Folder…</button></div>
-    <div class="status"><span id="folderName"></span><span id="loadNote"></span></div>
-    <ol id="list"></ol>
   </section>
+
+  <section class="card browser" id="br1" style="--c: var(--a); grid-area: brA"></section>
+  <section class="card browser" id="br2" style="--c: var(--b); grid-area: brB"></section>
 </main>
 
 <dialog id="dlg">
@@ -175,43 +268,63 @@
 </dialog>
 
 <template id="deckTpl">
-  <div class="top"><span class="letter"></span><span class="title">No track</span><button class="eject">EJECT</button></div>
-  <div class="readout num"><b data-v="left">−0:00</b><span><span data-v="time">0:00</span> / <span data-v="length">0:00</span></span><span><span data-v="bpm">-</span> BPM</span><span data-v="rate">0.0%</span></div>
+  <div class="top"><span class="letter"></span><img class="cover" alt="" hidden><span class="name"><span class="title">No track</span><span class="album"></span></span><button class="eject">EJECT</button></div>
+  <div class="readout num"><b data-v="left">−0:00</b><span><span data-v="time">0:00</span> / <span data-v="length">0:00</span></span><span class="bpm"><span data-v="bpm">-</span> BPM</span><span data-v="rate">0.0%</span></div>
   <div class="bar"><canvas class="wave"></canvas><div class="fill"></div><div class="loop" hidden></div><span class="hint">hold to seek</span></div>
-  <div class="zoombox"><canvas class="zoom"></canvas><div class="zoomctl"><button data-z="2" title="zoom out">−</button><span class="zoomspan"></span><button data-z="0.5" title="zoom in">+</button></div></div>
   <div class="transport">
     <button data-k="shift" title="next pad tap deletes its cue">SHIFT</button><button data-k="cue">CUE</button><button data-k="play">PLAY</button><button data-k="sync">SYNC</button><button data-k="pfl" title="headphone cue">PHONES</button>
   </div>
-  <div class="padmodes"><button data-pm="0">Hot cue</button><button data-pm="1">Beat loop</button><button data-pm="2">Loop roll</button><button data-pm="3">Manual</button><button data-snap title="loops start on the closest beat or bar instead of the one before">Nearest</button></div>
+  <div class="padmodes"><button data-pm="0">Hot cue</button><button data-pm="1">Beat loop</button><button data-pm="2">Loop roll</button><button data-pm="3">Manual</button><button data-snap title="loops start on the closest beat or bar instead of the one before">Snap</button></div>
   <div class="pads"></div>
+  <p class="padhint"></p>
   <div class="knobs">
     <div>LOW<div class="meter bi"><i data-m="loweq"></i></div></div><div>MID<div class="meter bi"><i data-m="mideq"></i></div></div>
     <div>HIGH<div class="meter bi"><i data-m="higheq"></i></div></div><div>VOL<div class="meter"><i data-m="volume"></i></div></div>
   </div>
 </template>
 
+<template id="waveTpl"><canvas class="zoom"></canvas><span class="wl"></span><div class="zoomctl"><button data-z="2" title="zoom out">−</button><span class="zoomspan"></span><button data-z="0.5" title="zoom in">+</button></div></template>
+
+<template id="browserTpl">
+  <div class="tools"><input class="search" type="search" autocomplete="off"></div>
+  <p class="loadNote"></p>
+  <ol class="queue" hidden></ol>
+  <div class="preview" hidden><img alt=""><div><b class="pt"></b><span class="pa"></span><span class="pm"></span></div></div>
+  <ol class="list"></ol>
+</template>
+
 <script>
   // The page sends the same messages the DDJ-200 does (see server.mjs for the list) and shows what [ddj-web] reports.
   const $ = (s, el = document) => el.querySelector(s)
   const S = {}                      // latest values from Pd, e.g. S['d1-pos'] = [0.42]
-  let songs = []
+  let songs = [], folder = '', meta = {}  // meta: song path -> { album, side, cover }
   let dirty = true
   const v = (k, i = 0) => S[k]?.[i]
   let noteTimer
   const note = (t) => { $('#note').textContent = t; clearTimeout(noteTimer); noteTimer = setTimeout(() => ($('#note').textContent = ''), 3000) }
   const send = (msg) => fetch('/cmd', { method: 'POST', body: msg })
-    .then((r) => r.ok || note(v('pd') ? `Not sent: ${msg}` : 'Pd not connected'))
+    .then((r) => r.ok || note(v('pd') ? "Pd didn't take that, try again" : 'Pd not connected'))
     .catch(() => note('Server not reachable'))
   const name = (p) => String(p ?? '').split('/').pop().replace(/\.[^.]+$/, '')
   const secs = (t) => { const [m, s] = String(t ?? '0:00').split(':'); return +m * 60 + +s || 0 }
   const toggle = (b, on) => { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on) }
+  const hasTrack = (d) => (v(`d${d}-title`) ?? '-') !== '-'
+  // risky taps take two (live safety): the first arms the button for 2 s and asks, the second does it
+  function twice(b, ask, fn) {
+    if (b.armed) { clearTimeout(b.armed); b.armed = 0; b.classList.remove('armed'); dirty = true; return fn() }
+    b.armed = setTimeout(() => { b.armed = 0; b.classList.remove('armed'); dirty = true }, 2000)
+    b.ask = ask
+    b.classList.add('armed')
+    b.textContent = ask
+  }
+  const label = (b, text) => { const t = b.armed ? b.ask : text; if (b.textContent !== t) b.textContent = t }
   const throttle = (fn, ms = 40) => { let t = 0; return (...a) => { const now = Date.now(); if (now - t >= ms) { t = now; fn(...a) } } }
 
   // pad modes (ddj-loops): beat loop / loop roll sizes in beats
   const padLabels = [[1, 2, 3, 4, 5, 6, 7, 8], ['1/4', '1/2', 1, 2, 4, 8, 16, 32], ['1/16', '1/8', '1/4', '1/2', 1, 2, 4, 8], ['IN', 'OUT', 'RELOOP', '', '', '', '', '']]
-  const padTitles = ['tap: set / jump to cue · SHIFT, shift-click or right-click: delete',
-    'tap: loop this many beats · tap the lit pad, SHIFT or right-click: exit', 'hold: roll this many beats, the track carries on underneath',
-    'IN: loop start here · OUT: loop end here, starts looping · RELOOP: exit, or jump back into the loop']
+  const padTitles = ['Tap: set or jump to a cue · SHIFT, then tap: delete it',
+    'Tap: loop that many beats · the lit pad again or SHIFT: exit', 'Hold: roll that many beats, the track carries on underneath',
+    'IN: loop start · OUT: loop end, starts looping · RELOOP: exit or jump back in']
 
   // decks; SHIFT latches for one pad tap (touch has no shift key), like holding SHIFT on the controller
   const shift = { 1: false, 2: false }
@@ -219,6 +332,9 @@
     const el = $(`#deck${d}`)
     el.append($('#deckTpl').content.cloneNode(true))
     $('.letter', el).textContent = d === 1 ? 'A' : 'B'
+    const wave = $(`#wave${d}`)
+    wave.append($('#waveTpl').content.cloneNode(true))
+    $('.wl', wave).textContent = d === 1 ? 'A' : 'B'
     for (let i = 1; i <= 8; i++) {
       const b = document.createElement('button')
       b.textContent = i
@@ -243,12 +359,14 @@
         else send(`d${d}-${b.dataset.k} 127`)
       }
     })
-    $('.eject', el).onclick = () => send(`d${d}-eject`)
-    el.querySelectorAll('.zoomctl button').forEach((b) => (b.onclick = () => { zoomSpan[d] = Math.min(Math.max(zoomSpan[d] * b.dataset.z, 1), 32) }))
-    $('.zoom', el).onwheel = (e) => { e.preventDefault(); zoomSpan[d] = Math.min(Math.max(zoomSpan[d] * (e.deltaY > 0 ? 1.25 : 0.8), 1), 32) }
+    $('.eject', el).onclick = (e) => twice(e.currentTarget, 'EJECT?', () => send(`d${d}-eject`))
+    // one zoom for both lanes, so their playheads and beats line up
+    const zoom = (f) => { zoomSpan[1] = zoomSpan[2] = Math.min(Math.max(zoomSpan[d] * f, 1), 32) }
+    wave.querySelectorAll('.zoomctl button').forEach((b) => (b.onclick = () => zoom(b.dataset.z)))
+    $('.zoom', wave).onwheel = (e) => { e.preventDefault(); zoom(e.deltaY > 0 ? 1.25 : 0.8) }
     el.querySelectorAll('[data-pm]').forEach((b) => (b.onclick = () => send(`d${d}-padmode ${b.dataset.pm}`)))
     $('[data-snap]', el).onclick = () => send(`d${d}-loopsnap ${v(`d${d}-loopsnap`) ? 0 : 1}`)
-    // a paused deck seeks on tap; a playing one only after a 300 ms hold, so a stray touch can't jump the track
+    // seeking takes a 300 ms hold, playing or paused, so a stray touch can't jump the track or lose a cue set by ear
     const bar = $('.bar', el)
     let armedAt = 0
     const seek = throttle((e) => {
@@ -257,11 +375,12 @@
     })
     bar.onpointerdown = (e) => {
       bar.setPointerCapture(e.pointerId)
-      armedAt = Date.now() + (v(`d${d}-play`) ? 300 : 0)
-      if (!v(`d${d}-play`)) seek(e)
+      bar.classList.add('holding')
+      armedAt = Date.now() + 300
     }
     bar.onpointermove = (e) => { if (bar.hasPointerCapture(e.pointerId) && Date.now() >= armedAt) seek(e) }
-    bar.onpointerup = (e) => { if (Date.now() >= armedAt) seek(e) }
+    bar.onpointerup = (e) => { bar.classList.remove('holding'); if (Date.now() >= armedAt) seek(e) }
+    bar.onpointercancel = () => bar.classList.remove('holding')
   }
 
   // waveforms: dN-wave = peak bins from [ddj-wave], 100 per second spread evenly over the track
@@ -293,16 +412,26 @@
     drawPeaks(g, W, H, w, (x) => x * w.length / W, 0.55)
   }
 
+  // the loop to show: a running beat loop / loop roll (start and length from ddj-loops), else the manual IN / OUT (-1 = not set)
+  function loopOf(d) {
+    const k = (key) => `d${d}-${key}`, mode = v(k('padmode')) ?? 0, pad = v(k('looppad')) ?? 0
+    const s = v(k('loopstart')) ?? -1, len = v(k('looplen')) ?? 0
+    if ((mode === 1 || mode === 2) && pad && s >= 0 && len > 0) return { a: s, b: s + len, on: true, beat: true }
+    return { a: v(k('loopin')) ?? -1, b: v(k('loopout')) ?? -1, on: mode === 3 && pad === 2, beat: false }
+  }
+
   // zoom: a few seconds around the playhead, scrolling. Pd reports the position 20 times a second,
   // so between reports it is moved on from the play rate
   const zoomSpan = { 1: 4, 2: 4 }   // seconds shown
   const last = { 1: {}, 2: {} }
   function paintZoom(d) {
-    const el = $(`#deck${d}`), k = (key) => `d${d}-${key}`, w = S[k('wave')] ?? []
+    const el = $(`#wave${d}`), k = (key) => `d${d}-${key}`, w = S[k('wave')] ?? []
     const cv = $('.zoom', el), [g, W, H] = fit(cv)
+    el.classList.toggle('playing', !!v(k('play')))
     g.clearRect(0, 0, W, H)
     const len = w.length / 100   // seconds
     $('.zoomspan', el).textContent = `${zoomSpan[d]} s`
+    el.classList.toggle('empty', !len)
     if (!len) return
     const L = last[d], pos = S[k('pos')]
     if (L.pos !== pos) { L.pos = pos; L.p = v(k('pos')) ?? 0; L.t = performance.now() }
@@ -311,23 +440,32 @@
     const X = (t) => (t - t0) / span * W          // seconds -> px
     const st = getComputedStyle(el), c = st.getPropertyValue('--c'), cue = st.getPropertyValue('--cue')
     // loop region
-    const a = v(k('loopin')) ?? -1, b = v(k('loopout')) ?? -1
+    const { a, b, on } = loopOf(d)
+    const dpr = devicePixelRatio || 1
     if (a >= 0) {
       g.fillStyle = '#3fd28b'
-      g.globalAlpha = v(k('padmode')) === 3 && v(k('looppad')) === 2 ? 0.25 : 0.12
+      g.globalAlpha = on ? 0.22 : 0.1
       if (b > a) g.fillRect(X(a * len), 0, X(b * len) - X(a * len), H)
       g.globalAlpha = 1
+      if (b > a && on) { g.fillRect(X(a * len), 0, X(b * len) - X(a * len), 4 * dpr); g.fillRect(X(a * len), H - 4 * dpr, X(b * len) - X(a * len), 4 * dpr) }  // solid band: looping
       g.fillRect(X(a * len) - 1, 0, 2, H)
       if (b > a) g.fillRect(X(b * len) - 1, 0, 2, H)
     }
-    // beat grid: bars brighter than beats
-    const bpm = v(k('tbpm')) ?? 0, fb = v(k('firstbeat')) ?? 0
-    if (bpm > 0) {
+    // beat grid: bars full height and numbered, beats as ticks on the edges. The tracked beats
+    // (dN-beatgrid = first count, then beat times) follow the record; until they are in, the bpm grid
+    const bpm = v(k('tbpm')) ?? 0, fb = v(k('firstbeat')) ?? 0, grid = S[k('beatgrid')] ?? []
+    const tick = Math.max(H * 0.12, 4 * dpr)
+    g.font = `600 ${11 * dpr}px Inter, system-ui, sans-serif`
+    const beatAt = (t, n) => {
+      const x = Math.round(X(t))
+      if (n % 4) { g.fillStyle = 'rgba(255,255,255,.4)'; g.fillRect(x, 0, dpr, tick); g.fillRect(x, H - tick, dpr, tick) }
+      else { g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(x, 0, dpr, H); if (n >= 0) g.fillText(n / 4 + 1, x + 3 * dpr, H - 4 * dpr) }
+    }
+    if (grid.length > 2) {
+      for (let i = 1; i < grid.length && grid[i] < t0 + span; i++) if (grid[i] >= t0) beatAt(grid[i], grid[0] + i - 1)
+    } else if (bpm > 0) {
       const beat = 60 / bpm
-      for (let n = Math.ceil((t0 - fb) / beat); fb + n * beat < t0 + span; n++) {
-        g.fillStyle = n % 4 ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.35)'
-        g.fillRect(Math.round(X(fb + n * beat)), 0, 1, H)
-      }
+      for (let n = Math.ceil((t0 - fb) / beat); fb + n * beat < t0 + span; n++) beatAt(fb + n * beat, n)
     }
     // peaks: played part dimmer
     g.fillStyle = c
@@ -338,9 +476,15 @@
     g.restore(); g.save(); g.beginPath(); g.rect(mid, 0, W - mid, H); g.clip()
     drawPeaks(g, W, H, w, from, 0.9)
     g.restore()
+    // timeline: song time along the top, m:ss at a step that gives about 4 labels for the zoom
+    const step = [0.5, 1, 2, 5, 10, 15, 30, 60].find((s) => span / s <= 5) ?? 60
+    g.fillStyle = 'rgba(255,255,255,.6)'
+    for (let n = Math.ceil(Math.max(t0, 0) / step); n * step <= Math.min(t0 + span, len); n++) {
+      const t = n * step, x = Math.round(X(t))
+      g.fillRect(x, 0, dpr, 6 * dpr)
+      g.fillText(`${Math.floor(t / 60)}:${(t % 60).toFixed(step < 1 ? 1 : 0).padStart(step < 1 ? 4 : 2, '0')}`, x + 3 * dpr, 16 * dpr)
+    }
     // hot cues
-    const dpr = devicePixelRatio || 1
-    g.font = `${10 * dpr}px system-ui, sans-serif`
     g.fillStyle = cue;
     (S[k('cues')] ?? []).forEach((q, i) => {
       if (!(q > 0)) return
@@ -356,8 +500,19 @@
     const el = $(`#deck${d}`), k = (key) => `d${d}-${key}`
     const title = v(k('title')), playing = !!v(k('play'))
     el.classList.toggle('playing', playing)
+    el.classList.toggle('empty', !hasTrack(d))
     el.classList.toggle('shift', shift[d])
     $('.title', el).textContent = title && title !== '-' ? name(title) : 'No track'
+    // album, side and cover of the loaded song (songs from the list only)
+    const path = title && title !== '-' ? v(k('loaded')) ?? '' : ''
+    if (el.dataset.song !== path || el.dataset.meta !== String(!!meta[path])) {
+      const { album = '', side = '', cover = '' } = meta[path] ?? {}
+      el.dataset.song = path
+      el.dataset.meta = String(!!meta[path])
+      $('.album', el).textContent = [album, side && `Side ${side}`].filter(Boolean).join(' · ')
+      $('.cover', el).hidden = !cover
+      if (cover) $('.cover', el).src = `/cover?song=${encodeURIComponent(path)}`
+    }
     $('[data-v=time]', el).textContent = v(k('time')) ?? '0:00'
     $('[data-v=length]', el).textContent = v(k('length')) ?? '0:00'
     const left = Math.max(secs(v(k('length'))) - secs(v(k('time'))), 0)
@@ -368,7 +523,7 @@
     paintWave(el, S[k('wave')] ?? [])
     $('.fill', el).style.width = `${(v(k('pos')) ?? 0) * 100}%`
     $('.eject', el).disabled = playing
-    $('.eject', el).title = playing ? 'pause the deck to eject' : ''
+    label($('.eject', el), playing ? 'PAUSE TO EJECT' : 'EJECT')
     toggle($('[data-k=play]', el), playing)
     toggle($('[data-k=sync]', el), !!v(k('sync')))
     toggle($('[data-k=pfl]', el), !!v(k('phones')))
@@ -378,25 +533,27 @@
     const mode = v(k('padmode')) ?? 0, loopPad = v(k('looppad')) ?? 0
     el.querySelectorAll('[data-pm]').forEach((b) => toggle(b, +b.dataset.pm === mode))
     toggle($('[data-snap]', el), !!v(k('loopsnap')))
+    $('[data-snap]', el).hidden = mode !== 1 && mode !== 2   // snap only moves beat loops and rolls
+    $('.padhint', el).textContent = padTitles[mode]
     el.querySelectorAll('.pads button').forEach((b, i) => {
       b.textContent = padLabels[mode][i]
-      b.title = padTitles[mode]
       b.classList.toggle('on', mode ? loopPad === i + 1 : cues[i] > 0)
-      b.classList.toggle('lit', lights[(d - 1) * 8 + i] > 0)
+      b.classList.toggle('lit', hasTrack(d) && lights[(d - 1) * 8 + i] > 0)   // an empty deck shows no LED: it read as a set cue
     })
     el.querySelectorAll('.tick').forEach((t, i) => {
       t.hidden = mode || !(cues[i] > 0)
       t.style.left = `${(cues[i] - 1) * 100}%`
     })
-    const a = v(k('loopin')) ?? -1, b = v(k('loopout')) ?? -1, loop = $('.loop', el)  // manual loop IN / OUT, -1 = not set
+    const { a, b, on, beat } = loopOf(d), loop = $('.loop', el)
     loop.hidden = a < 0
     loop.classList.toggle('open', !(b > a))
-    loop.classList.toggle('on', mode === 3 && loopPad === 2)
+    loop.classList.toggle('on', on)
+    loop.classList.toggle('beat', beat)
     loop.style.left = `${a * 100}%`
     loop.style.width = b > a ? `${(b - a) * 100}%` : '0'
     el.querySelectorAll('[data-m]').forEach((m) => {
       const x = (v(k(m.dataset.m)) ?? (m.dataset.m === 'volume' ? 0 : 64)) / 127
-      if (m.dataset.m === 'volume') m.style.width = `${x * 100}%`
+      if (m.dataset.m === 'volume') { m.style.width = `${x * 100}%`; m.parentNode.parentNode.classList.toggle('down', playing && !x) }
       else { m.style.marginLeft = `${Math.min(x, 0.5) * 100}%`; m.style.width = `${Math.abs(x - 0.5) * 100}%` }  // EQ knobs are centred
     })
   }
@@ -411,10 +568,34 @@
   $('#trfx').onclick = () => send('master-trfx 127')
   $('#calibrate').onclick = () => send('ddj-calibrate')
   $('#phones').onclick = () => send('master-headmix 127')
+  // starting a mix or stopping the recording takes two taps; a running mix stops on one
+  $('#rec').onclick = (e) => (v('master-rec') ? twice(e.currentTarget, 'STOP REC?', () => send('master-rec 0')) : send('master-rec 1'))
+  $('#mix').onclick = (e) => (v('mixing') ? send('mix') : twice(e.currentTarget, 'MIX? TAP AGAIN', () => send('mix')))
+  $('#auto').onclick = () => send(`mix-auto ${v('automix') ? 0 : 1}`)
+  const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  // every frame: the MIX beat countdown and the REC timer
+  function paintCounters() {
+    const spb = v('mixing', 2)
+    label($('#mix'), v('mixing') && spb ? `${Math.max(Math.ceil((v('mixing', 1) - Date.now()) / 1000 / spb), 0)} BEATS · STOP` : 'MIX')
+    const since = v('rec-since')
+    label($('#rec'), v('master-rec') && since ? `● REC ${clock(Math.max(Math.floor((Date.now() - since) / 1000), 0))}` : 'REC')
+  }
   function paintMixer() {
     if (!draggingXf && S['master-crossfader']) xf.value = v('master-crossfader')
     toggle($('#trfx'), !!v('master-trfx'))
     toggle($('#phones'), !!v('master-phones'))
+    toggle($('#rec'), !!v('master-rec'))
+    // MIX needs a deck playing and a song in the other one; the line under it says why not
+    const playing = (d) => !!v(`d${d}-play`), on = [1, 2].find(playing)
+    const ready = [1, 2].some((d) => playing(d) && hasTrack(3 - d))
+    toggle($('#mix'), !!v('mixing'))
+    $('#mix').disabled = !v('mixing') && !ready
+    toggle($('#auto'), !!v('automix'))
+    $('#mixWhy').textContent = [
+      v('mixing') ? 'Tap to stop the crossfade where it is' : !on ? 'Play a deck to mix' : !ready ? `Load deck ${on === 1 ? 'B' : 'A'} to mix` : 'Syncs the other deck and crossfades over 16 beats',
+      v('automix') && 'AUTO mixes 16 beats before the end',
+    ].filter(Boolean).join(' · ')
+    $('#recWhy').textContent = 'Records the master to ~/Music/Recordings/set'
     const level = Math.min(Math.max(((v('master-level') ?? 0) - 40) / 60, 0), 1)
     peak = Math.max(level, peak - 0.005)
     $('#vu').style.width = `${level * 100}%`
@@ -422,111 +603,209 @@
   }
 
   // pad lights
-  const modes = ['auto', 'chase', 'ping-pong', 'fill', 'checker', 'eq', 'eq rows', 'off']
-  modes.forEach((m, i) => {
+  // each mode as one frame of [ddj-lightshow]'s formulas, brightness 0..1 per pad (i: 0-7 deck A, 8-15 deck B;
+  // pads 1-4 on top). Moving patterns get a fading trail behind them
+  const checker = (row, col) => +((row + col) % 2 === 0)
+  const modes = [
+    ['auto', (i, row, col) => (i < 8 ? +(i <= 4) : checker(row, col))],            // cycles chase, ping-pong, fill, checker
+    ['chase', (i) => [1, 0.5, 0.25, 0.12][5 - i] ?? 0],                              // one pad runs through all 16
+    ['ping-pong', (i, row, col, c) => ({ 5: 1, 4: 0.45, 3: 0.2 })[c] ?? 0],          // a column across the 8 and back
+    ['fill', (i) => +(i <= 10)],
+    ['checker', (i, row, col) => checker(row, col)],
+    ['eq', (i, row, col) => +([[3, 2, 3, 1], [2, 3, 1, 2]][i >> 3][col] >= 3 - row)],   // columns = bands, height = level
+    ['eq rows', (i, row, col) => +(col < [[2, 3], [1, 4]][i >> 3][row])],             // bottom row bass, top row treble
+    ['off', (i) => +[0, 5, 10].includes(i)],                                          // stored cues only
+  ]
+  const pattern = (lit) => {
+    let svg = '<svg viewBox="0 0 100 22" aria-hidden="true">'
+    for (let i = 0; i < 16; i++) {
+      const row = (i % 8) >> 2, col = i % 4, c = (i >> 3) * 4 + col, a = lit(i, row, col, c)
+      svg += `<rect x="${c * 12 + (c >= 4 ? 6 : 0)}" y="${row * 12}" width="10" height="10" rx="2" style="--c: var(--${i < 8 ? 'a' : 'b'})"${a ? ` class="l" opacity="${a}"` : ''}/>`
+    }
+    return svg + '</svg>'
+  }
+  modes.forEach(([m, lit], i) => {
     const b = document.createElement('button')
-    b.textContent = m
+    b.innerHTML = pattern(lit) + m
     b.onclick = () => send(`lights-mode ${i}`)
     $('#modes').append(b)
   })
   const paintModes = () => $('#modes').querySelectorAll('button').forEach((b, i) => toggle(b, i === (v('lights-mode') ?? 0)))
 
   // scope
-  const cv = $('#scope'), ctx = cv.getContext('2d')
-  const scopeColor = getComputedStyle(document.documentElement).getPropertyValue('--a')
   function paintScope() {
-    const data = S.scope ?? []
-    ctx.clearRect(0, 0, cv.width, cv.height)
-    ctx.strokeStyle = scopeColor
-    ctx.lineWidth = 1.5
-    ctx.beginPath()
+    const [g, W, H] = fit($('#scope')), data = S.scope ?? []
+    g.clearRect(0, 0, W, H)
+    g.strokeStyle = '#d8d8e0'
+    g.lineWidth = 1.5 * (devicePixelRatio || 1)
+    g.beginPath()
     data.forEach((y, i) => {
-      const px = (i / Math.max(data.length - 1, 1)) * cv.width, py = (1 - (y + 1) / 2) * cv.height
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)
+      const px = (i / Math.max(data.length - 1, 1)) * W, py = (1 - (y + 1) / 2) * H
+      i ? g.lineTo(px, py) : g.moveTo(px, py)
     })
-    ctx.stroke()
+    g.stroke()
   }
 
-  // browser (deck 1 = A, deck 2 = B; loading only works on a paused deck, Pd enforces it too)
-  function renderList() {
-    const q = $('#search').value.toLowerCase()
+  // song lists: the left one loads deck A, the right one deck B (only a paused deck, Pd enforces it too).
+  // Each deck has its own cursor in Pd (bsel DECK N, deck 0 = both): the left jog edge browses the left list, the right one the right
+  const pick = { 1: 0, 2: 0 }, shown = { 1: -1, 2: -1 }
+  let active = 1, lastBsel
+  const br = (d) => $(`#br${d}`)
+  const choose = (d, i) => { pick[d] = +i; active = d; send(`web-browser select ${d} ${i}`); dirty = true }
+  function renderList(d) {
+    const el = br(d), q = $('.search', el).value.toLowerCase(), letter = d === 1 ? 'A' : 'B'
     const frag = document.createDocumentFragment()
     songs.forEach((p, i) => {
-      const t = name(p)
-      if (q && !t.toLowerCase().includes(q)) return
+      const t = name(p), { album = '', side = '' } = meta[p] ?? {}
+      const sub = [album, side && `Side ${side}`].filter(Boolean).join(' · ')
+      // every search word starts a word of the title or album · side ("soccio side a")
+      const words = `${t} ${sub}`.toLowerCase().split(/[^\p{L}\p{N}]+/u)
+      if (!q.split(/[^\p{L}\p{N}]+/u).every((w) => words.some((x) => x.startsWith(w)))) return
       const li = document.createElement('li')
       li.dataset.i = i
-      li.innerHTML = '<span class="n num"></span><span class="t"></span><button class="a" aria-label="load into deck A">A</button><button class="b" aria-label="load into deck B">B</button>'
+      li.innerHTML = `<span class="n num"></span><span class="t"></span><button aria-label="load into deck ${letter}">LOAD ${letter}</button>`
       $('.n', li).textContent = i + 1
       $('.t', li).textContent = t
+      if (sub) $('.t', li).append(Object.assign(document.createElement('small'), { textContent: sub }))
       frag.append(li)
     })
-    $('#list').replaceChildren(frag)
-    $('#folderName').textContent = songs.length ? `${songs.length} songs · ${songs[0].split('/').slice(0, -1).join('/')}` : 'No songs: choose a folder with .wav or .aif files'
-    markSel(true)
+    $('.list', el).replaceChildren(frag)
+    $('#folderName').textContent = songs.length ? `${songs.length} songs · ${folder.replace(/^\/Users\/[^/]+/, '~')}` : 'No songs: choose a folder with .wav, .aif or .flac files'
+    markSel(d, true)
     paintLoadButtons()
   }
-  let lastSel = -1
-  function markSel(force) {
-    const sel = v('sel') ?? 0
-    if (sel === lastSel && !force) return
-    lastSel = sel
-    $('li.sel')?.classList.remove('sel')
-    const li = $(`li[data-i="${sel}"]`)
+  function markSel(d, force) {
+    if (pick[d] === shown[d] && !force) return
+    shown[d] = pick[d]
+    const el = br(d)
+    $('li.sel', el)?.classList.remove('sel')
+    const li = $(`li[data-i="${pick[d]}"]`, el)
     li?.classList.add('sel')
     li?.scrollIntoView({ block: 'nearest' })
+    paintPreview(el, songs[pick[d]])
   }
+  function paintPreview(el, path) {
+    const box = $('.preview', el), info = meta[path]
+    box.hidden = !info
+    if (!info) return
+    const { album, side, cover, year, label } = info
+    // track N of M on this side of this record, in list order
+    const same = songs.filter((p) => meta[p]?.album === album && meta[p]?.side === side)
+    const where = side ? `Side ${side} · track ${same.indexOf(path) + 1} of ${same.length}` : ''
+    $('.pt', box).textContent = name(path)
+    $('.pa', box).textContent = album
+    $('.pm', box).textContent = [where, year, label].filter(Boolean).join(' · ')
+    $('img', box).hidden = !cover
+    const src = `/cover?song=${encodeURIComponent(path)}`
+    if (cover && $('img', box).getAttribute('src') !== src) $('img', box).src = src
+  }
+  // a playing deck can't load: its buttons add to its queue instead (QUEUE A / QUEUE B)
   function paintLoadButtons() {
-    const busy = []
-    for (const [d, c] of [[1, 'a'], [2, 'b']]) {
-      const off = !v('pd') || !!v(`d${d}-state`)
-      if (v('pd') && off) busy.push(c.toUpperCase())
-      document.querySelectorAll(`li button.${c}`).forEach((b) => (b.disabled = off))
+    for (const d of [1, 2]) {
+      const letter = d === 1 ? 'A' : 'B', playing = !!v(`d${d}-state`)
+      br(d).classList.toggle('playing', playing)
+      br(d).querySelectorAll('.list li button').forEach((b) => {
+        b.disabled = !v('pd')
+        label(b, `${playing ? 'QUEUE' : 'LOAD'} ${letter}`)
+        b.setAttribute('aria-label', playing ? `add to deck ${letter}'s queue` : `load into deck ${letter}`)
+      })
+      $('.loadNote', br(d)).textContent = v('pd') ? '' : 'Pd not connected'
     }
-    $('#loadNote').textContent = !v('pd') ? 'Pd not connected' : busy.length ? `Pause deck ${busy.join(' / ')} to load` : ''
   }
-  $('#list').onclick = (e) => {
-    const li = e.target.closest('li')
-    if (!li) return
-    if (e.target.tagName === 'BUTTON') send(`web-browser load ${e.target.classList.contains('a') ? 1 : 2} ${li.dataset.i}`)
-    else send(`web-browser select ${li.dataset.i}`)
+  let queue = { 1: [], 2: [] }
+  function renderQueue() {
+    for (const d of [1, 2]) {
+      const ol = $('.queue', br(d))
+      ol.hidden = !queue[d]?.length
+      ol.dataset.n = queue[d]?.length ?? 0
+      ol.replaceChildren(...(queue[d] ?? []).map((p, i) => {
+        const li = document.createElement('li')
+        li.innerHTML = '<span class="t"></span><button aria-label="remove from the queue">×</button>'
+        $('.t', li).textContent = name(p)
+        $('button', li).onclick = () => send(`queue-remove ${d} ${i}`)
+        return li
+      }))
+    }
   }
-  $('#search').oninput = renderList
-  $('#search').onkeydown = (e) => {
-    const first = $('#list li')
-    if (e.key === 'Enter' && first) send(`web-browser select ${first.dataset.i}`)
-    if (e.key === 'Escape' || e.key === 'Enter') e.target.blur()
+  for (const d of [1, 2]) {
+    const el = br(d)
+    el.append($('#browserTpl').content.cloneNode(true))
+    $('.search', el).placeholder = `Search songs for deck ${d === 1 ? 'A' : 'B'}…`
+    $('.list', el).onclick = (e) => {
+      const li = e.target.closest('li')
+      if (!li) return
+      choose(d, li.dataset.i)
+      if (e.target.tagName !== 'BUTTON') return
+      // loading over a paused deck's song (and its cues) asks first; queueing on a playing deck doesn't
+      const load = () => send(`web-browser load ${d} ${li.dataset.i}`)
+      hasTrack(d) && !v(`d${d}-state`) ? twice(e.target, 'REPLACE?', load) : load()
+    }
+    $('.search', el).oninput = () => renderList(d)
+    $('.search', el).onfocus = () => (active = d)
+    $('.search', el).onkeydown = (e) => {
+      const first = $('li', el)
+      if (e.key === 'Enter' && first) choose(d, first.dataset.i)
+      if (e.key === 'Escape' || e.key === 'Enter') e.target.blur()
+    }
   }
 
-  // keys: ↑ ↓ browse the visible list, A / B load the selected song, / search
+  // keys: ↑ ↓ browse the list used last, A / B load that list's selected song, / search
   document.onkeydown = (e) => {
     if (e.target.matches('input') || e.metaKey || e.ctrlKey || e.altKey || dlg.open) return
-    const lis = [...document.querySelectorAll('#list li')], at = lis.indexOf($('li.sel'))
+    const lis = [...br(active).querySelectorAll('li')], at = lis.indexOf($('li.sel', br(active)))
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       const li = lis[Math.min(Math.max(at + (e.key === 'ArrowDown' ? 1 : -1), 0), lis.length - 1)]
-      if (li) send(`web-browser select ${li.dataset.i}`)
-    } else if ((e.key === 'a' || e.key === 'b') && at >= 0) $(`button.${e.key}`, lis[at]).click()
-    else if (e.key === '/') { e.preventDefault(); $('#search').focus() }
+      if (li) choose(active, li.dataset.i)
+    } else if (e.key === 'a' || e.key === 'b') $(`li.sel button`, br(e.key === 'a' ? 1 : 2))?.click()   // asks like a tap does
+    else if (e.key === 'm') $('#mix').click()
+    else if (e.key === '/') { e.preventDefault(); $('.search', br(active)).focus() }
   }
 
   // folder picker
   const dlg = $('#dlg')
-  let dirNow = ''
-  async function openDir(path = '') {
-    const r = await (await fetch('/dirs?path=' + encodeURIComponent(path))).json()
+  let dirNow = '', rowNow = null
+  const list = async (path) => (await fetch('/dirs?path=' + encodeURIComponent(path))).json()
+  // a folder in the tree: its row, then its subfolders (read the first time it opens)
+  function node(name, path, depth) {
+    const el = document.createElement('div'), row = document.createElement('div'), kids = document.createElement('div')
+    el.className = 'node'; row.className = 'row'; kids.className = 'kids'
+    Object.assign(el, { path, depth })
+    row.textContent = name
+    row.style.paddingLeft = `${12 + depth * 18}px`
+    row.onclick = () => expand(el, rowNow !== row || !el.classList.contains('open'))
+    el.append(row, kids)
+    return el
+  }
+  // select a folder and open (or close) it
+  async function expand(el, open) {
+    const r = await list(el.path)
     if (r.error) return ($('#dirPath').textContent = `Can't open that folder (only folders inside your home folder)`)
+    rowNow?.classList.remove('sel')
+    rowNow = el.firstChild
+    rowNow.classList.add('sel')
     dirNow = r.path
     $('#dirPath').textContent = `${r.path} · ${r.audio} song${r.audio === 1 ? '' : 's'} here`
-    const rows = [['..', r.parent], ...r.dirs.map((n) => [n, `${r.path}/${n}`])]
-    $('#dirs').replaceChildren(...rows.map(([label, p]) => {
-      const div = document.createElement('div')
-      div.textContent = label === '..' ? '↑ up' : `${label}/`
-      div.onclick = () => openDir(p)
-      return div
-    }))
+    const kids = el.lastChild
+    if (!kids.childElementCount) kids.append(...r.dirs.map((n) => node(n, `${r.path}/${n}`, el.depth + 1)))
+    el.classList.toggle('leaf', !r.dirs.length)
+    el.classList.toggle('open', open)
   }
-  $('#folderBtn').onclick = async () => { await openDir(); dlg.showModal() }
+  // the tree starts at your home folder, opened down to the current folder (~/Music/Recordings at first)
+  $('#folderBtn').onclick = async () => {
+    const r = await list('')
+    let el = node('~', r.home, 0)
+    $('#dirs').replaceChildren(el)
+    dlg.showModal()
+    for (const name of r.path.slice(r.home.length).split('/').filter(Boolean)) {
+      await expand(el, true)
+      const kid = [...el.lastChild.children].find((k) => k.path === `${el.path}/${name}`)
+      if (!kid) break
+      el = kid
+    }
+    await expand(el, true)
+    rowNow.scrollIntoView({ block: 'center' })
+  }
   $('#dlgCancel').onclick = () => dlg.close()
   $('#dlgUse').onclick = async () => {
     const r = await fetch('/folder', { method: 'POST', body: dirNow })
@@ -540,9 +819,15 @@
       dirty = false
       $('#conn').classList.toggle('up', !!v('pd'))
       $('#conn').textContent = v('pd') ? 'Pd running' : 'Pd not connected'
-      paintDeck(1); paintDeck(2); paintMixer(); paintModes(); paintScope(); markSel(); paintLoadButtons()
+      if (S.bsel && S.bsel !== lastBsel) {
+        lastBsel = S.bsel
+        const [d, n] = S.bsel
+        if (d !== 2) pick[1] = n
+        if (d !== 1) pick[2] = n
+      }
+      paintDeck(1); paintDeck(2); paintMixer(); paintModes(); paintScope(); markSel(1); markSel(2); paintLoadButtons()
     }
-    paintZoom(1); paintZoom(2)   // every frame: it scrolls
+    paintZoom(1); paintZoom(2); paintCounters()   // every frame: they move
     requestAnimationFrame(paint)
   }
   requestAnimationFrame(paint)
@@ -551,7 +836,10 @@
   const events = new EventSource('/events')
   events.onmessage = (e) => {
     const m = JSON.parse(e.data)
-    if (m.songs) { songs = m.songs; renderList() }
+    if (m.folder !== undefined) folder = m.folder
+    if (m.meta) meta = m.meta
+    if (m.songs || m.folder) { songs = m.songs ?? songs; renderList(1); renderList(2) }
+    if (m.queue) { queue = m.queue; renderQueue() }
     if (m.state) { for (const k in S) delete S[k]; Object.assign(S, m.state) }
     if (m.k) S[m.k] = m.v
     dirty = true

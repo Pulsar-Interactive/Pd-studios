@@ -7,7 +7,7 @@
 #X obj 360 270 ddj-mixer;
 #X obj 20 270 ddj-browser;
 #X obj 720 400 scope;
-#X text 20 500 controller: jog edge = browse songs \, SHIFT+jog = move in the song \, touch the top = scratch \, SYNC = beat sync \, SHIFT+SYNC = load into a paused deck \, TRANSITION FX = echo on the deck you fade out \, CFX = filter \, pads = hot cues / beat loop / loop roll (pad mode below or on the web page) \, CUE 1 / CUE 2 / MASTER CUE = headphone cue on BlackHole 3/4;
+#X text 20 500 controller: jog edge = browse songs \, SHIFT+jog = move in the song \, touch the top = scratch \, SYNC = beat sync \, SHIFT+SYNC = load into a paused deck (queue on a playing one) \, TRANSITION FX = echo on the deck you fade out \, CFX = filter \, pads = hot cues / beat loop / loop roll (pad mode below or on the web page) \, CUE 1 / CUE 2 / MASTER CUE = headphone cue on BlackHole 3/4;
 #X obj 720 60 ddj-web;
 #X obj 720 95 ddj-phones;
 #X connect 3 0 5 0;
@@ -31,3 +31,10 @@
 #X msg 430 600 \; d2-padmode 2;
 #X msg 570 600 \; d2-padmode 3;
 #X text 710 580 0 = hot cues \, 1 = beat loop \, 2 = loop roll \, 3 = manual loop (pad 1 IN \, pad 2 OUT \, pad 3 exit / reloop);
+#X obj 720 300 r master-rec;
+#X obj 720 330 rec-file set;
+#X obj 860 330 ddj-ui-tap master-rec;
+#X connect 5 0 23 0;
+#X connect 5 1 23 1;
+#X connect 22 0 23 2;
+#X connect 22 0 24 0;
