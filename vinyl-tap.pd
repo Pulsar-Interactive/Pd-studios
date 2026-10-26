@@ -1,0 +1,18 @@
+#N canvas 40 40 460 280 12;
+#X obj 20 20 inlet;
+#X obj 20 50 list;
+#X obj 20 80 t a a;
+#X obj 120 140 list;
+#X obj 120 110 r vinyl-hello;
+#X obj 20 170 list prepend \$1;
+#X obj 20 200 list trim;
+#X obj 20 230 s vinyl-ui;
+#X text 200 20 [vinyl-tap KEY] - sends KEY VALUE to the web page through vinyl-ui \, and sends the last value again on vinyl-hello (when the page server connects)., f 32;
+#X connect 0 0 1 0;
+#X connect 1 0 2 0;
+#X connect 2 1 3 1;
+#X connect 2 0 5 0;
+#X connect 4 0 3 0;
+#X connect 3 0 5 0;
+#X connect 5 0 6 0;
+#X connect 6 0 7 0;
