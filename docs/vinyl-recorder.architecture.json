@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Vinyl Recorder",
+    "output": "vinyl-recorder.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "page", "type": "frontend", "label": "Vinyl page", "sublabel": "index.html", "pos": [40, 100], "size": [150, 64] },
+    { "id": "server", "type": "backend", "label": "vinyl-web server", "sublabel": "node :9013", "pos": [500, 100], "size": [160, 64] },
+    { "id": "turntable", "type": "external", "label": "Turntable", "sublabel": "line out", "pos": [40, 360], "size": [150, 64] },
+    { "id": "blackhole", "type": "cloud", "label": "BlackHole 16ch", "sublabel": "inputs 15/16", "pos": [260, 360], "size": [150, 64], "tag": "found by name" },
+    { "id": "pd", "type": "backend", "label": "vinyl-rec.pd", "sublabel": "headless Pd · take logic", "pos": [500, 360], "size": [160, 64] },
+    { "id": "recfile", "type": "backend", "label": "rec-file.pd", "sublabel": "writesf~ 24-bit", "pos": [880, 360], "size": [180, 64] },
+    { "id": "wavs", "type": "database", "label": "WAV takes", "sublabel": "~/Music/Recordings/vinyl", "pos": [880, 580], "size": [180, 64], "tag": "<Artist>/<Album>/" },
+    { "id": "catalog", "type": "backend", "label": "vinyl-catalog skill", "sublabel": "dips.py · cut.py", "pos": [500, 580], "size": [160, 64] },
+    { "id": "release", "type": "external", "label": "MusicBrainz / Discogs", "sublabel": "release + tracklist", "pos": [40, 580], "size": [170, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Recording (Pd)", "wraps": ["pd", "recfile"] }
+  ],
+  "connections": [
+    { "id": "line-in", "from": "turntable", "to": "blackhole", "label": "line in" },
+    { "id": "adc", "from": "blackhole", "to": "pd", "label": "adc~ 15/16", "variant": "emphasis" },
+    { "id": "rec-control", "from": "pd", "to": "recfile", "label": "1 start · 0 stop · folder", "variant": "emphasis" },
+    { "id": "write-wav", "from": "recfile", "to": "wavs", "label": "NNN.wav", "variant": "emphasis", "labelDy": 80 },
+    { "id": "map", "from": "wavs", "to": "catalog", "label": "map to tracklist" },
+    { "id": "identify", "from": "catalog", "to": "release", "label": "identify release", "variant": "dashed" },
+    { "id": "commands", "from": "page", "to": "server", "label": "POST /cmd · /album" },
+    { "id": "events", "from": "server", "to": "page", "label": "SSE /events", "labelDy": 22 },
+    { "id": "fudi", "from": "server", "to": "pd", "label": "FUDI commands :9012", "labelDy": 56, "labelDx": -64 },
+    { "id": "status", "from": "pd", "to": "server", "label": "vinyl-tap KEY VALUE", "labelDy": -64, "labelDx": 64 }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Take rules", "items": ["Starts after 0.4 s above threshold", "Pre-roll and stop delayed 600 ms", "Splits on silence; new album turns AUTO on"] },
+    { "dot": "cyan", "title": "Control", "items": ["Server spawns Pd headless, 16 inputs", "Commands allowlisted; Host + Origin checked"] },
+    { "dot": "amber", "title": "Catalog output", "items": ["Tagged A1 - Title.flac at −16 LUFS", "cover.jpg, album.json, notes.md", "Original WAVs kept untouched in raw/"] }
+  ]
+}
