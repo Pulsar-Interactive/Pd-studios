@@ -1,0 +1,12 @@
+#N canvas 200 100 820 520 12;
+#X obj 40 110 adc~ 1 2;
+#X obj 40 200 outlet~;
+#X obj 130 200 outlet~;
+#X text 40 30 loopback-map -- the single source of truth for input channels. Any patch that reads audio instantiates this instead of hardcoding adc~ numbers. When the Loopback device changes \, this is the only file you edit., f 80;
+#X text 36 228 SRC L;
+#X text 126 228 SRC R;
+#X text 40 275 TWO CHANNELS \, on purpose. The Loopback device currently carries one source -- the browser. Channels get added when a source actually exists \, not in advance: an empty channel is indistinguishable from a broken one \, and that ambiguity is what made the old 16-channel map impossible to debug., f 80;
+#X text 40 360 GROWING THIS: add the new source at the BOTTOM of the Loopback source list so existing channels keep their numbers \, then add a matching outlet~ here to the RIGHT of the existing ones. Outlet order follows x position \, so appending on the right can never renumber what is already wired., f 80;
+#X text 40 455 Start Pd with at least 2 input channels. Input device = the Loopback device \, output device = the Tascam -- Pd takes them separately \, so no aggregate device is needed., f 80;
+#X connect 0 0 1 0;
+#X connect 0 1 2 0;

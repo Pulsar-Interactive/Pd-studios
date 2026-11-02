@@ -1,0 +1,43 @@
+#N canvas 100 100 800 600 12;
+
+#X text 50 20 tidal-synth: OSC receiver for TidalCycles;
+
+#X obj 50 60 netreceive -u -b 9001;
+#X text 250 60 UDP on port 9001;
+
+#X obj 50 100 oscparse;
+#X text 250 100 decode OSC messages;
+
+#X obj 50 140 route /note /ctrl /play;
+#X text 250 140 route by OSC address;
+
+#X obj 50 200 print NOTE;
+#X obj 150 200 print CTRL;
+#X obj 250 200 print PLAY;
+
+#X text 50 260 --- simple synth ---;
+
+#X obj 50 300 r note-freq;
+#X obj 50 340 osc~;
+#X obj 50 380 *~;
+#X obj 50 420 dac~;
+
+#X obj 200 300 r note-trigger;
+#X obj 200 340 bng 20 250 50 0 empty empty empty 0 -6 0 8 -262144 -1 -1;
+#X obj 200 380 vline~;
+#X msg 200 360 1 10 \, 0 200 10;
+#X text 320 360 attack 10ms \, release 200ms;
+
+#X connect 1 0 3 0;
+#X connect 3 0 5 0;
+#X connect 5 0 7 0;
+#X connect 5 1 8 0;
+#X connect 5 2 9 0;
+#X connect 11 0 12 0;
+#X connect 12 0 13 0;
+#X connect 13 0 14 0;
+#X connect 13 0 14 1;
+#X connect 15 0 16 0;
+#X connect 16 0 18 0;
+#X connect 18 0 17 0;
+#X connect 17 0 13 1;

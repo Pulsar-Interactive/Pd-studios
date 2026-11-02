@@ -1,0 +1,7 @@
+#N canvas 200 200 400 300 12;
+#X obj 50 50 netreceive 9000 1;
+#X obj 50 100 print RAW;
+#X text 150 50 UDP port 9000;
+#X text 50 200 Restart Tidal then run:;
+#X text 50 220 d1 $ s "bd";
+#X connect 0 0 1 0;

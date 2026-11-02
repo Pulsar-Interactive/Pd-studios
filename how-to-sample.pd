@@ -115,7 +115,7 @@
 #X obj 64 172 tabread4~ soundData;
 #X obj 15 210 dac~ 3;
 #X obj 96 210 dac~ 4;
-#X msg 33 12 read -resize ./llorona.wav soundData;
+#X msg 33 12 read -resize ../../Music/llorona.wav soundData;
 #X obj 62 191 *~ 1;
 #X listbox 33 57 15 0 0 0 - - - 0;
 #X floatatom 32 74 5 0 0 0 - - - 0;
