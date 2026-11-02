@@ -52,8 +52,8 @@
 #X msg 927 114 start;
 #X msg 999 132 stop;
 #X obj 920 299 output~;
-#X msg 833 33 open ../../Music/pedro-navajas-bongos.wav 44100 44 2 1 b;
-#X msg 213 209 read -resize ../../Music/gorillaz.wav bufferLeft bufferRight;
+#X msg 833 33 open ../../../../Music/pedro-navajas-bongos.wav 44100 44 2 1 b;
+#X msg 213 209 read -resize ../../../../Music/gorillaz.wav bufferLeft bufferRight;
 #X obj 163 655 dac~ 1 2;
 #X connect 0 0 1 0;
 #X connect 0 1 7 0;

@@ -25,12 +25,12 @@
 #X obj 620 20 loadbang;
 #X msg 620 50 dir;
 #X obj 620 80 pdcontrol;
-#X obj 620 110 list append ../../Music/Recordings \$1;
+#X obj 620 110 list append ../../../../Music/Recordings \$1;
 #X obj 620 140 file join;
 #X obj 760 140 file normalize;
 #X obj 620 170 t s s;
 #X obj 700 200 file mkdir;
-#X text 560 260 [rec-file PREFIX] - records the two signal inlets to ~/Music/Recordings/PREFIX/PREFIX-NNN.wav (24-bit) \, found as ../../Music from this file (the repo lives in ~/Documents/Pd). right inlet: 1 = start a new file (the first free number) \, 0 = stop \, folder PATH = write into PATH instead (numbering starts again there) \, prefix NAME = name files NAME-01.wav \, NAME-02.wav... from now on. outlet: the path of each new file., f 40;
+#X text 560 260 [rec-file PREFIX] - records the two signal inlets to ~/Music/Recordings/PREFIX/PREFIX-NNN.wav (24-bit) \, found as ../../../../Music from this file (the repo lives in ~/Documents/Pd). right inlet: 1 = start a new file (the first free number) \, 0 = stop \, folder PATH = write into PATH instead (numbering starts again there) \, prefix NAME = name files NAME-01.wav \, NAME-02.wav... from now on. outlet: the path of each new file., f 40;
 #X obj 300 25 route folder prefix;
 #X obj 400 50 list;
 #X obj 480 50 list;

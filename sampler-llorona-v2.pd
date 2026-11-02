@@ -4,7 +4,7 @@
 #X obj 20 62 bng 19 250 50 0 empty empty empty 0 -10 0 12 #fcfcfc #000000 #000000;
 #X text 46 62 choose a file;
 #X obj 20 88 openpanel;
-#X msg 150 88 symbol ../../Music/gorillaz.wav;
+#X msg 150 88 symbol ../../../../Music/gorillaz.wav;
 #X obj 20 116 list prepend read -resize;
 #X obj 20 142 list append \$0-bufL \$0-bufR;
 #X obj 20 168 list trim;
@@ -53,7 +53,7 @@
 #X obj 300 502 *~;
 #X obj 500 502 *~;
 #X text 20 380 4. second source - streamed from disk;
-#X msg 20 404 open ../../Music/pedro-navajas-bongos.wav;
+#X msg 20 404 open ../../../../Music/pedro-navajas-bongos.wav;
 #X msg 20 432 start;
 #X msg 78 432 stop;
 #X obj 20 460 readsf~ 2;

@@ -128,7 +128,7 @@
 #X obj 220 540 loadbang;
 #X msg 220 570 dir;
 #X obj 220 600 pdcontrol;
-#X obj 220 630 list append ../../Music/Recordings/vinyl;
+#X obj 220 630 list append ../../../../Music/Recordings/vinyl;
 #X obj 220 660 file join;
 #X obj 220 690 file normalize;
 #X obj 980 50 * 4;
