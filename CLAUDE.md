@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running Patches
 
-Pd is installed as **Pd 0.55.2** (`/Applications/Pd-0.55.2.app`) and aliased in the shell:
+Pd is the custom **Pd 0.57.0-WIP** build at `/usr/local/bin/pd` (source in `~/src/pure-data`, local portaudio patch), aliased in the shell:
 
 ```bash
 pd patch.pd            # open a patch (starts DSP-capable GUI)
