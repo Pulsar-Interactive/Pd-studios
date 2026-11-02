@@ -50,3 +50,7 @@
 *.swo
 .vscode/
 .idea/
+
+# Claude Code worktrees / Python cache
+.claude/worktrees/
+__pycache__/
