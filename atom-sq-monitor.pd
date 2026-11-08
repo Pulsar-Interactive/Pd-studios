@@ -1,0 +1,4 @@
+#N canvas 40 40 520 200 12;
+#X text 20 10 ATOM SQ check: select the SQ for MIDI in and out in Media > MIDI Settings \, open the Pd window \, and move each control. raw numbers print there. fix wrong ones in atom-sq-map. close this before opening atom-sq-synth: both load the map;
+#X obj 20 80 atom-sq-map;
+#X obj 20 110 web-dj-midi-monitor;
