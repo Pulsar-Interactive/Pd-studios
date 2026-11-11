@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-**Pd-studios** (`git@github.com:Rckdrigo/Pd-studios.git`) — a collection of Pure Data (Pd) patches for live audio performance, synthesis experiments, MIDI/OSC bridging, and OpenGL visuals. There is no build system or test suite: `.pd` files are plain-text patch definitions loaded and run in the Pd GUI. "Running" a patch means opening it in Pd; editing means either dragging objects in the GUI or hand-editing the `.pd` text.
+**Pd-studios** (`git@github.com:Pulsar-Interactive/Pd-studios.git`) — a collection of Pure Data (Pd) patches for live audio performance, synthesis experiments, MIDI/OSC bridging, and OpenGL visuals. There is no build system or test suite: `.pd` files are plain-text patch definitions loaded and run in the Pd GUI. "Running" a patch means opening it in Pd; editing means either dragging objects in the GUI or hand-editing the `.pd` text.
 
 ## Running Patches
 
