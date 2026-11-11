@@ -228,7 +228,7 @@ async function listDirs(path) {
   return { path, home, dirs: dirs.sort((a, b) => a.localeCompare(b)), audio: await countAudio(path) }
 }
 
-// songs in a folder and up to 3 subfolders down, laid out the way vinyl-catalog files an album:
+// songs in a folder and up to 3 subfolders down, laid out the way sidereal-catalog files an album:
 // the album.json tracklist first, then recordings not in it yet; raw/ holds the originals, so it is skipped
 const isAudio = (name) => /\.(wav|aiff?|flac)$/i.test(name)
 const byName = (a, b) => a.localeCompare(b, undefined, { numeric: true })
@@ -237,7 +237,7 @@ async function songsIn(path, depth = 3) {
   const files = entries.filter((e) => e.isFile() && isAudio(e.name)).map((e) => e.name).sort(byName)
   const album = await readFile(join(path, 'album.json'), 'utf8').then(JSON.parse).catch(() => ({}))
   const listed = (album.tracks ?? []).filter((t) => files.includes(t.file))
-  // album: from album.json, else the folder name; side: A1 in the tracklist, B-01.wav from vinyl-rec, or a folder named "… A"
+  // album: from album.json, else the folder name; side: A1 in the tracklist, B-01.wav from Sidereal, or a folder named "… A"
   const [, folderName, folderSide] = basename(path).match(/^(.*?)(?: ([A-H]))?$/)
   const title = album.title ? `${album.artist} – ${album.title}` : folderName
   const side = (name) => name.match(/^([A-H])\d*\b/)?.[1] ?? folderSide ?? ''
