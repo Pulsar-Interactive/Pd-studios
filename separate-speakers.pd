@@ -53,8 +53,11 @@
 #X msg 474 383 send mains \$1;
 #X msg 39 394 send sub \$1;
 #X text 241 621 env~ is dB 0-100 \, tapped before the -100 the vu needs. Mains = high band \, sub = low band.;
-#X connect 0 0 1 0;
-#X connect 0 1 2 0;
+#X obj 40 75 eq3;
+#X obj 300 75 eq3;
+#X obj 900 25 netreceive -u 9030;
+#X obj 900 58 route low mid high;
+#X text 1000 25 music EQ from the ATOM SQ (hold SHIFT + encoders 3-5 \, see atom-sq-eq.pd). low \, mid \, high in dB \, flat until it sends;
 #X connect 1 0 7 0;
 #X connect 1 1 3 0;
 #X connect 2 0 7 1;
@@ -98,3 +101,14 @@
 #X connect 47 0 49 0;
 #X connect 51 0 47 0;
 #X connect 52 0 47 0;
+#X connect 0 0 54 0;
+#X connect 0 1 55 0;
+#X connect 54 0 1 0;
+#X connect 55 0 2 0;
+#X connect 56 0 57 0;
+#X connect 57 0 54 1;
+#X connect 57 0 55 1;
+#X connect 57 1 54 2;
+#X connect 57 1 55 2;
+#X connect 57 2 54 3;
+#X connect 57 2 55 3;

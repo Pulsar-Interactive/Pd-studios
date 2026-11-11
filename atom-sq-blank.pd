@@ -1,0 +1,13 @@
+#N canvas 40 40 500 220 12;
+#X text 20 5 [atom-sq-blank FIELD VIEW] - clears one screen field when view VIEW (page*10 + sub-page) is drawn;
+#X obj 20 50 r sq-page-redraw;
+#X obj 20 80 t b;
+#X obj 20 110 expr sqview==\$2;
+#X obj 20 140 sel 1;
+#X msg 20 170 32;
+#X obj 20 200 atom-sq-text \$1 127 127 127;
+#X connect 1 0 2 0;
+#X connect 2 0 3 0;
+#X connect 3 0 4 0;
+#X connect 4 0 5 0;
+#X connect 5 0 6 0;

@@ -1,0 +1,7 @@
+#N canvas 40 40 460 200 12;
+#X text 150 20 [atom-sq-enc CC] - signed delta from one relative encoder. 1-63 = up \, 65-127 = down. if clockwise reads negative \, flip the expr here;
+#X obj 20 20 ctlin \$1;
+#X obj 20 60 expr if(\$f1>=64 \, 64-\$f1 \, \$f1);
+#X obj 20 100 outlet;
+#X connect 1 0 2 0;
+#X connect 2 0 3 0;
